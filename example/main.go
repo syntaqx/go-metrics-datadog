@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	reg, err := datadog.NewReporter(
+	rep, err := datadog.NewReporter(
 		nil,              // Metrics registry, or nil for default
 		"127.0.0.1:8125", // DogStatsD UDP address
 		time.Second*10,   // Update interval
@@ -20,8 +20,8 @@ func main() {
 
 	// configure a prefix, and send the EC2 availability zone as a tag with
 	// every metric.
-	reg.Client.Namespace = "test."
-	reg.Client.Tags = append(reg.Client.Tags, "us-east-1a")
+	rep.Client.Namespace = "test."
+	rep.Client.Tags = append(reg.Client.Tags, "us-east-1a")
 
 	go reg.Flush()
 
