@@ -25,4 +25,4 @@ details.
 
 ## License
 
-Distrubted under the MIT license. See [LICENSE][] file for details.
+Distributed under the MIT license. See [LICENSE][] file for details.
