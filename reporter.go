@@ -68,7 +68,7 @@ func (r *Reporter) Flush() {
 
 // FlushOnce submits a snapshot submission of the registry to DataDog. This can
 // be used in a loop similarly to FlushWithInterval for custom error handling or
-// data submittion variations.
+// data submission variations.
 func (r *Reporter) FlushOnce() error {
 	r.Registry.Each(func(name string, i interface{}) {
 		switch metric := i.(type) {
