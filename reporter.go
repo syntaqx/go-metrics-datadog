@@ -11,6 +11,9 @@ import (
 	metrics "github.com/rcrowley/go-metrics"
 )
 
+// ReporterOption is function-option used during the construction of a *Reporter
+type ReporterOption func(*Reporter) error
+
 // Reporter represents a metrics registry, and the statsd client the metrics
 // will be flushed to
 type Reporter struct {
@@ -25,14 +28,16 @@ type Reporter struct {
 	interval time.Duration
 
 	// Reporter type configuration settings
-	tags        []string
+	tags []string
+	ss   map[string]int64
+
+	// Optional parameters
 	percentiles []float64
 	p           []string
-	ss          map[string]int64
 }
 
 // NewReporter creates a new Reporter with a pre-configured statsd client.
-func NewReporter(r metrics.Registry, addr string, d time.Duration, percentiles []float64) (*Reporter, error) {
+func NewReporter(r metrics.Registry, addr string, d time.Duration, options ...ReporterOption) (*Reporter, error) {
 	if r == nil {
 		r = metrics.DefaultRegistry
 	}
@@ -41,24 +46,35 @@ func NewReporter(r metrics.Registry, addr string, d time.Duration, percentiles [
 	if err != nil {
 		return nil, err
 	}
-	percentileNames, err := getPercentileNames(percentiles)
-	if err != nil {
-		return nil, err
+	reporter := &Reporter{
+		Client:   client,
+		Registry: r,
+		interval: d,
+		ss:       make(map[string]int64),
 	}
-	return &Reporter{
-		Client:      client,
-		Registry:    r,
-		interval:    d,
-		percentiles: percentiles,
-		p:           percentileNames,
-		ss:          make(map[string]int64),
-	}, nil
+	for _, option := range options {
+		if err := option(reporter); err != nil {
+			return nil, err
+		}
+	}
+	return reporter, nil
+}
+
+// UsePercentiles builds a *Reporter that reports the specified percentiles
+// for Histograms and TimedMetrics
+func UsePercentiles(percentiles []float64) ReporterOption {
+	return func(r *Reporter) error {
+		if len(percentiles) == 0 {
+			return fmt.Errorf("Must specify at least 1 percentile")
+		}
+		var err error
+		r.percentiles = percentiles
+		r.p, err = getPercentileNames(percentiles)
+		return err
+	}
 }
 
 func getPercentileNames(percentiles []float64) ([]string, error) {
-	if len(percentiles) == 0 {
-		return nil, nil
-	}
 	names := make([]string, len(percentiles))
 	for i, percentile := range percentiles {
 		if percentile <= 0 || percentile >= 1 {
