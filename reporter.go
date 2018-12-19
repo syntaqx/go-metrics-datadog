@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"runtime"
+	"strconv"
 	"time"
 
 	"github.com/DataDog/datadog-go/statsd"
@@ -31,7 +32,7 @@ type Reporter struct {
 }
 
 // NewReporter creates a new Reporter with a pre-configured statsd client.
-func NewReporter(r metrics.Registry, addr string, d time.Duration) (*Reporter, error) {
+func NewReporter(r metrics.Registry, addr string, d time.Duration, percentiles []float64) (*Reporter, error) {
 	if r == nil {
 		r = metrics.DefaultRegistry
 	}
@@ -40,14 +41,32 @@ func NewReporter(r metrics.Registry, addr string, d time.Duration) (*Reporter, e
 	if err != nil {
 		return nil, err
 	}
-
+	percentileNames, err := getPercentileNames(percentiles)
+	if err != nil {
+		return nil, err
+	}
 	return &Reporter{
 		Client:      client,
 		Registry:    r,
 		interval:    d,
-		percentiles: []float64{0.50, 0.75, 0.95, 0.99, 0.999},
+		percentiles: percentiles,
+		p:           percentileNames,
 		ss:          make(map[string]int64),
 	}, nil
+}
+
+func getPercentileNames(percentiles []float64) ([]string, error) {
+	if len(percentiles) == 0 {
+		return nil, nil
+	}
+	names := make([]string, len(percentiles))
+	for i, percentile := range percentiles {
+		if percentile <= 0 || percentile >= 1 {
+			return nil, fmt.Errorf("Percentile must lie in interval (0,1)")
+		}
+		names[i] = ".p" + strconv.FormatFloat(percentile, 'f', -1, 64)[2:]
+	}
+	return names, nil
 }
 
 // Flush is a blocking exporter function which reports metrics in the registry
