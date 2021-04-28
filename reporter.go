@@ -127,6 +127,7 @@ func (r *Reporter) FlushOnce() error {
 			r.Client.Gauge(name+".min", float64(ms.Min()), r.tags, 1)
 			r.Client.Gauge(name+".mean", ms.Mean(), r.tags, 1)
 			r.Client.Gauge(name+".stddev", ms.StdDev(), r.tags, 1)
+			r.Client.Gauge(name+".sum", float64(ms.Sum()), r.tags, 1)
 			r.Client.Gauge(name+".var", ms.Variance(), r.tags, 1)
 
 			if len(r.percentiles) > 0 {
@@ -153,6 +154,7 @@ func (r *Reporter) FlushOnce() error {
 			r.Client.Gauge(name+".min", time.Duration(ms.Min()).Seconds()*1000, r.tags, 1)
 			r.Client.Gauge(name+".mean", time.Duration(ms.Mean()).Seconds()*1000, r.tags, 1)
 			r.Client.Gauge(name+".stddev", time.Duration(ms.StdDev()).Seconds()*1000, r.tags, 1)
+			r.Client.Gauge(name+".sum", float64(ms.Sum()), r.tags, 1)
 
 			if len(r.percentiles) > 0 {
 				values := ms.Percentiles(r.percentiles)
