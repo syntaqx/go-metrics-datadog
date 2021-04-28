@@ -4,7 +4,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/syntaqx/go-metrics-datadog)](https://goreportcard.com/report/github.com/syntaqx/go-metrics-datadog)
 [![Go Reference](https://pkg.go.dev/badge/github.com/syntaqx/go-metrics-datadog.svg)](https://pkg.go.dev/github.com/syntaqx/go-metrics-datadog)
 
-`go-datadog-metrics` defines a DataDog reporter for `recrowley/go-metrics`.
+`go-datadog-metrics` defines a DataDog reporter for [`rcrowley/go-metrics`](https://github.com/rcrowley/go-metrics).
 
 ## Getting started
 
