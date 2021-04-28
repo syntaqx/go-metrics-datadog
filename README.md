@@ -1,29 +1,22 @@
 # DataDog
 
-[![Build Status](https://travis-ci.org/syntaqx/go-metrics-datadog.svg?branch=master)](https://travis-ci.org/syntaqx/go-metrics-datadog)
+[![golangci-lint](https://github.com/syntaqx/go-metrics-datadog/actions/workflows/golangci-lint.yml/badge.svg)](https://github.com/syntaqx/go-metrics-datadog/actions/workflows/golangci-lint.yml)
+[![test](https://github.com/syntaqx/go-metrics-datadog/actions/workflows/test.yml/badge.svg)](https://github.com/syntaqx/go-metrics-datadog/actions/workflows/test.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/syntaqx/go-metrics-datadog)](https://goreportcard.com/report/github.com/syntaqx/go-metrics-datadog)
-[![GoDoc](https://godoc.org/github.com/syntaqx/go-metrics-datadog?status.svg)](https://godoc.org/github.com/syntaqx/go-metrics-datadog)
-![license](https://img.shields.io/github/license/syntaqx/go-metrics-datadog.svg)
+[![Go Reference](https://pkg.go.dev/badge/github.com/syntaqx/go-metrics-datadog.svg)](https://pkg.go.dev/github.com/syntaqx/go-metrics-datadog)
 
-[go-metrics]: https://github.com/rcrowley/go-metrics
-[datadog-go]: https://github.com/DataDog/datadog-go
-[license]:    ./LICENSE
+`go-datadog-metrics` defines a DataDog reporter for `recrowley/go-metrics`.
 
-This package provides a reporter for the [go-metrics][] library that will post
-the metrics to [datadog-go][].
-
-## Installation
+## Getting started
 
 ```sh
-go get -u github.com/syntaqx/go-metrics-datadog
-go get -u github.com/DataDog/datadog-go/...
+go get github.com/syntaqx/go-metrics-datadog
 ```
 
 ## Usage
 
-Simply check out the [example](./example/main.go) file for implementation
-details.
+Check out the [example implementation](./examples) for the base implementation.
 
 ## License
 
-Distributed under the MIT license. See [LICENSE][] file for details.
+This project is open source available under the [MIT license](./LICENSE)

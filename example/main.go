@@ -2,19 +2,26 @@ package main
 
 import (
 	"log"
+	"os"
 	"time"
 
 	metrics "github.com/rcrowley/go-metrics"
-	"github.com/syntaqx/go-metrics-datadog"
+	datadog "github.com/syntaqx/go-metrics-datadog"
 )
 
 func main() {
-	reporter, err := datadog.NewReporter(
-		nil,              // Metrics registry, or nil for default
-		"127.0.0.1:8125", // DogStatsD UDP address
-		time.Second*10,   // Update interval
+	// https://docs.datadoghq.com/developers/dogstatsd
+	statsdAddr, ok := os.LookupEnv("DD_AGENT_HOST")
+	if !ok {
+		statsdAddr = "127.0.0.1:8125"
+	}
+
+	ddOpts := []datadog.ReporterOption{
+		datadog.UseFlushInterval(time.Second * 10),
 		datadog.UsePercentiles([]float64{0.25, 0.99}),
-	)
+	}
+
+	reporter, err := datadog.NewReporter(nil, statsdAddr, ddOpts...)
 	if err != nil {
 		log.Fatal(err)
 	}

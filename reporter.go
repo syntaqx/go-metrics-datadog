@@ -11,6 +11,10 @@ import (
 	metrics "github.com/rcrowley/go-metrics"
 )
 
+const (
+	defaultFlushInterval = time.Second * 10
+)
+
 // ReporterOption is function-option used during the construction of a *Reporter
 type ReporterOption func(*Reporter) error
 
@@ -37,7 +41,7 @@ type Reporter struct {
 }
 
 // NewReporter creates a new Reporter with a pre-configured statsd client.
-func NewReporter(r metrics.Registry, addr string, d time.Duration, options ...ReporterOption) (*Reporter, error) {
+func NewReporter(r metrics.Registry, addr string, options ...ReporterOption) (*Reporter, error) {
 	if r == nil {
 		r = metrics.DefaultRegistry
 	}
@@ -49,7 +53,7 @@ func NewReporter(r metrics.Registry, addr string, d time.Duration, options ...Re
 	reporter := &Reporter{
 		Client:   client,
 		Registry: r,
-		interval: d,
+		interval: defaultFlushInterval,
 		ss:       make(map[string]int64),
 	}
 	for _, option := range options {
@@ -71,6 +75,14 @@ func UsePercentiles(percentiles []float64) ReporterOption {
 		r.percentiles = percentiles
 		r.p, err = getPercentileNames(percentiles)
 		return err
+	}
+}
+
+// UseFlushInterval configures the flush tick interval to use with `Flush`
+func UseFlushInterval(d time.Duration) ReporterOption {
+	return func(r *Reporter) error {
+		r.interval = d
+		return nil
 	}
 }
 
