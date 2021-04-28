@@ -14,7 +14,7 @@ go get github.com/syntaqx/go-metrics-datadog
 
 ## Usage
 
-Check out the [example implementation](./examples) for the base implementation.
+Check out the [example implementation](./example) for the base implementation.
 
 ## License
 
