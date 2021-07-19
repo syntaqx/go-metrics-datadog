@@ -3,7 +3,9 @@ package datadog
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/DataDog/datadog-go/statsd"
@@ -13,6 +15,10 @@ import (
 const (
 	defaultFlushInterval = time.Second * 10
 )
+
+// Expect the tags in the pattern
+// namespace.metricName[tag1:value1,tag2:value2,etc....]
+var tagPattern = regexp.MustCompile("([\\w\\.]+)\\[([\\w\\W]+)\\]")
 
 // Reporter wraps a metrics registry with a given statsd client.
 type Reporter struct {
@@ -79,61 +85,63 @@ func (r *Reporter) Flush() {
 // be used in a loop similarly to FlushWithInterval for custom error handling or
 // data submission variations.
 func (r *Reporter) FlushOnce() error {
-	r.Registry.Each(func(name string, i interface{}) {
+	r.Registry.Each(func(metricName string, i interface{}) {
+		name, tags := r.splitNameAndTags(metricName)
+
 		switch metric := i.(type) {
 		case metrics.Counter:
 			v := metric.Count()
 			l := r.ss[name]
-			r.Client.Count(name, v-l, r.tags, 1)
+			r.Client.Count(name, v-l, tags, 1)
 			r.ss[name] = v
 
 		case metrics.Gauge:
-			r.Client.Gauge(name, float64(metric.Value()), r.tags, 1)
+			r.Client.Gauge(name, float64(metric.Value()), tags, 1)
 
 		case metrics.GaugeFloat64:
-			r.Client.Gauge(name, metric.Value(), r.tags, 1)
+			r.Client.Gauge(name, metric.Value(), tags, 1)
 
 		case metrics.Histogram:
 			ms := metric.Snapshot()
 
-			r.Client.Gauge(name+".count", float64(ms.Count()), r.tags, 1)
-			r.Client.Gauge(name+".max", float64(ms.Max()), r.tags, 1)
-			r.Client.Gauge(name+".min", float64(ms.Min()), r.tags, 1)
-			r.Client.Gauge(name+".mean", ms.Mean(), r.tags, 1)
-			r.Client.Gauge(name+".stddev", ms.StdDev(), r.tags, 1)
-			r.Client.Gauge(name+".sum", float64(ms.Sum()), r.tags, 1)
-			r.Client.Gauge(name+".var", ms.Variance(), r.tags, 1)
+			r.Client.Gauge(name+".count", float64(ms.Count()), tags, 1)
+			r.Client.Gauge(name+".max", float64(ms.Max()), tags, 1)
+			r.Client.Gauge(name+".min", float64(ms.Min()), tags, 1)
+			r.Client.Gauge(name+".mean", ms.Mean(), tags, 1)
+			r.Client.Gauge(name+".stddev", ms.StdDev(), tags, 1)
+			r.Client.Gauge(name+".sum", float64(ms.Sum()), tags, 1)
+			r.Client.Gauge(name+".var", ms.Variance(), tags, 1)
 
 			if len(r.percentiles) > 0 {
 				values := ms.Percentiles(r.percentiles)
 				for i, p := range r.p {
-					r.Client.Gauge(name+p, values[i], r.tags, 1)
+					r.Client.Gauge(name+p, values[i], tags, 1)
 				}
 			}
 
 		case metrics.Meter:
 			ms := metric.Snapshot()
 
-			r.Client.Gauge(name+".count", float64(ms.Count()), r.tags, 1)
-			r.Client.Gauge(name+".rate1", ms.Rate1(), r.tags, 1)
-			r.Client.Gauge(name+".rate5", ms.Rate5(), r.tags, 1)
-			r.Client.Gauge(name+".rate15", ms.Rate15(), r.tags, 1)
-			r.Client.Gauge(name+".mean", ms.RateMean(), r.tags, 1)
+			r.Client.Gauge(name+".count", float64(ms.Count()), tags, 1)
+			r.Client.Gauge(name+".rate1", ms.Rate1(), tags, 1)
+			r.Client.Gauge(name+".rate5", ms.Rate5(), tags, 1)
+			r.Client.Gauge(name+".rate15", ms.Rate15(), tags, 1)
+			r.Client.Gauge(name+".mean", ms.RateMean(), tags, 1)
 
 		case metrics.Timer:
 			ms := metric.Snapshot()
 
-			r.Client.Gauge(name+".count", float64(ms.Count()), r.tags, 1)
-			r.Client.Gauge(name+".max", time.Duration(ms.Max()).Seconds()*1000, r.tags, 1)
-			r.Client.Gauge(name+".min", time.Duration(ms.Min()).Seconds()*1000, r.tags, 1)
-			r.Client.Gauge(name+".mean", time.Duration(ms.Mean()).Seconds()*1000, r.tags, 1)
-			r.Client.Gauge(name+".stddev", time.Duration(ms.StdDev()).Seconds()*1000, r.tags, 1)
-			r.Client.Gauge(name+".sum", float64(ms.Sum()), r.tags, 1)
+			r.Client.Gauge(name+".count", float64(ms.Count()), tags, 1)
+			r.Client.Gauge(name+".max", time.Duration(ms.Max()).Seconds()*1000, tags, 1)
+			r.Client.Gauge(name+".min", time.Duration(ms.Min()).Seconds()*1000, tags, 1)
+			r.Client.Gauge(name+".mean", time.Duration(ms.Mean()).Seconds()*1000, tags, 1)
+			r.Client.Gauge(name+".stddev", time.Duration(ms.StdDev()).Seconds()*1000, tags, 1)
+			r.Client.Gauge(name+".sum", float64(ms.Sum()), tags, 1)
 
 			if len(r.percentiles) > 0 {
 				values := ms.Percentiles(r.percentiles)
 				for i, p := range r.p {
-					r.Client.Gauge(name+p, time.Duration(values[i]).Seconds()*1000, r.tags, 1)
+					r.Client.Gauge(name+p, time.Duration(values[i]).Seconds()*1000, tags, 1)
 				}
 			}
 		}
@@ -152,4 +160,15 @@ func handlePanic(rec interface{}) {
 		callers = callers + fmt.Sprintf("%v:%v\n", file, line)
 	}
 	log.Printf("Recovered from panic: %#v \n%v", rec, callers)
+}
+
+func (r *Reporter) splitNameAndTags(metric string) (string, []string) {
+	if res := tagPattern.FindStringSubmatch(metric); len(res) == 3 {
+		if r.tags == nil {
+			return res[1], append(strings.Split(res[2], ","))
+		} else {
+			return res[1], append(strings.Split(res[2], ","), r.tags...)
+		}
+	}
+	return metric, r.tags
 }
