@@ -85,15 +85,17 @@ func (r *Reporter) Flush() {
 // be used in a loop similarly to FlushWithInterval for custom error handling or
 // data submission variations.
 func (r *Reporter) FlushOnce() error {
+	reportCount := func(name string, tags []string, value int64) {
+		last := r.ss[name]
+		r.Client.Count(name, value-last, tags, 1)
+		r.ss[name] = value
+	}
 	r.Registry.Each(func(metricName string, i interface{}) {
 		name, tags := r.splitNameAndTags(metricName)
 
 		switch metric := i.(type) {
 		case metrics.Counter:
-			v := metric.Count()
-			l := r.ss[name]
-			r.Client.Count(name, v-l, tags, 1)
-			r.ss[name] = v
+			reportCount(name, tags, metric.Count())
 
 		case metrics.Gauge:
 			r.Client.Gauge(name, float64(metric.Value()), tags, 1)
@@ -104,7 +106,7 @@ func (r *Reporter) FlushOnce() error {
 		case metrics.Histogram:
 			ms := metric.Snapshot()
 
-			r.Client.Gauge(name+".count", float64(ms.Count()), tags, 1)
+			reportCount(name+".count", tags, ms.Count())
 			r.Client.Gauge(name+".max", float64(ms.Max()), tags, 1)
 			r.Client.Gauge(name+".min", float64(ms.Min()), tags, 1)
 			r.Client.Gauge(name+".mean", ms.Mean(), tags, 1)
@@ -122,7 +124,7 @@ func (r *Reporter) FlushOnce() error {
 		case metrics.Meter:
 			ms := metric.Snapshot()
 
-			r.Client.Gauge(name+".count", float64(ms.Count()), tags, 1)
+			reportCount(name+".count", tags, ms.Count())
 			r.Client.Gauge(name+".rate1", ms.Rate1(), tags, 1)
 			r.Client.Gauge(name+".rate5", ms.Rate5(), tags, 1)
 			r.Client.Gauge(name+".rate15", ms.Rate15(), tags, 1)
@@ -131,7 +133,7 @@ func (r *Reporter) FlushOnce() error {
 		case metrics.Timer:
 			ms := metric.Snapshot()
 
-			r.Client.Gauge(name+".count", float64(ms.Count()), tags, 1)
+			reportCount(name+".count", tags, ms.Count())
 			r.Client.Gauge(name+".max", time.Duration(ms.Max()).Seconds()*1000, tags, 1)
 			r.Client.Gauge(name+".min", time.Duration(ms.Min()).Seconds()*1000, tags, 1)
 			r.Client.Gauge(name+".mean", time.Duration(ms.Mean()).Seconds()*1000, tags, 1)
