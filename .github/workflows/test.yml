@@ -10,7 +10,7 @@ jobs:
   test:
     strategy:
       matrix:
-        go-version: ['latest', '1.16.x']
+        go-version: ['stable', '1.16.x']
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
