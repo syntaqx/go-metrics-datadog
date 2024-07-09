@@ -86,9 +86,10 @@ func (r *Reporter) Flush() {
 // data submission variations.
 func (r *Reporter) FlushOnce() error {
 	reportCount := func(name string, tags []string, value int64) {
-		last := r.ss[name]
+		metric := getFullMetricName(name, tags)
+		last := r.ss[metric]
 		r.Client.Count(name, value-last, tags, 1)
-		r.ss[name] = value
+		r.ss[metric] = value
 	}
 	r.Registry.Each(func(metricName string, i interface{}) {
 		name, tags := r.splitNameAndTags(metricName)
@@ -173,4 +174,8 @@ func (r *Reporter) splitNameAndTags(metric string) (string, []string) {
 		}
 	}
 	return metric, r.tags
+}
+
+func getFullMetricName(name string, tags []string) string {
+	return fmt.Sprintf("%s[%s]", name, strings.Join(tags, ","))
 }
