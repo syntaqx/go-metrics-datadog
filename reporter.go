@@ -91,7 +91,7 @@ func (r *Reporter) FlushOnce() error {
 		r.Client.Count(name, value-last, tags, 1)
 		r.ss[metric] = value
 	}
-	r.Registry.Each(func(metricName string, i interface{}) {
+	r.Registry.Each(func(metricName string, i any) {
 		name, tags := r.splitNameAndTags(metricName)
 
 		switch metric := i.(type) {
@@ -153,7 +153,7 @@ func (r *Reporter) FlushOnce() error {
 	return nil
 }
 
-func handlePanic(rec interface{}) {
+func handlePanic(rec any) {
 	callers := ""
 	for i := 2; true; i++ {
 		_, file, line, ok := runtime.Caller(i)
@@ -168,7 +168,7 @@ func handlePanic(rec interface{}) {
 func (r *Reporter) splitNameAndTags(metric string) (string, []string) {
 	if res := tagPattern.FindStringSubmatch(metric); len(res) == 3 {
 		if r.tags == nil {
-			return res[1], append(strings.Split(res[2], ","))
+			return res[1], strings.Split(res[2], ",")
 		} else {
 			return res[1], append(strings.Split(res[2], ","), r.tags...)
 		}

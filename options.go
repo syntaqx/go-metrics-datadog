@@ -22,7 +22,7 @@ func UseFlushInterval(d time.Duration) ReporterOption {
 func UsePercentiles(percentiles []float64) ReporterOption {
 	return func(r *Reporter) error {
 		if len(percentiles) == 0 {
-			return fmt.Errorf("Must specify at least 1 percentile")
+			return fmt.Errorf("must specify at least 1 percentile")
 		}
 		var err error
 		r.percentiles = percentiles
@@ -35,7 +35,7 @@ func getPercentileNames(percentiles []float64) ([]string, error) {
 	names := make([]string, len(percentiles))
 	for i, percentile := range percentiles {
 		if percentile <= 0 || percentile >= 1 {
-			return nil, fmt.Errorf("Percentile must lie in interval (0,1)")
+			return nil, fmt.Errorf("percentile must lie in interval (0,1)")
 		}
 		names[i] = ".p" + strconv.FormatFloat(percentile, 'f', -1, 64)[2:]
 	}
